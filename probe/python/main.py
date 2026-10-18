@@ -13,6 +13,8 @@ from flask import Flask, render_template, request
 from arduino.app_utils import *
 
 from features import parse_kx134_features
+from guard import IDLE as GUARD_IDLE
+from guard import GuardController
 from rules import evaluate
 from report import generate_report
 
@@ -22,6 +24,7 @@ logger.info("Project Pulse probe starting (Check mode)")
 flask_app = Flask(__name__)
 latest_lock = threading.Lock()
 latest = {"features": None, "result": None, "report": None}
+guard = GuardController()
 
 
 @call()
@@ -34,6 +37,10 @@ def get_kx134_stats() -> str: ...
 
 @call()
 def get_kx134_features() -> str: ...
+
+
+@call()
+def get_button_event() -> str: ...
 
 
 @call()
@@ -66,6 +73,18 @@ def poll_kx134_stats():
         time.sleep(1)
 
 
+def poll_button():
+    try:
+        event = get_button_event()
+    except Exception as exc:
+        logger.error("get_button_event failed: %s", exc)
+        return
+    if event == "press":
+        guard.button_press()
+    elif event == "hold":
+        guard.button_hold()
+
+
 def poll_kx134_features():
     while True:
         try:
@@ -75,8 +94,10 @@ def poll_kx134_features():
             with latest_lock:
                 latest["features"] = row
                 latest["result"] = result
+            poll_button()
+            led_state = led_state_for(result) if guard.state == GUARD_IDLE else guard.feed(row, result)
             try:
-                set_led_state(led_state_for(result))
+                set_led_state(led_state)
             except Exception as exc:
                 logger.error("set_led_state failed: %s", exc)
         except Exception as exc:

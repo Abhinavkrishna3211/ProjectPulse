@@ -3,6 +3,7 @@
 
 #include <Arduino_RouterBridge.h>
 
+#include "button.h"
 #include "kx134_sampler.h"
 #include "led.h"
 #include "mic_sampler.h"
@@ -13,9 +14,11 @@ void setup() {
   mic_sampler_start();
   kx134_sampler_start();
   led_start();
+  button_start();
 }
 
 void loop() {
   Bridge.update();
+  button_update();
   delay(10);
 }
