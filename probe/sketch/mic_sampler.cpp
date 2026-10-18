@@ -1,7 +1,7 @@
 // INMP441 bring-up (T0): SAI1_A as I2S RX master, mono (slot 0), driven by
 // hand-written STM32 LL register setup instead of a Zephyr i2s driver -
 // this core's shipped firmware has no sai1_a devicetree node and the sketch
-// build gives no overlay hook to add one (see CLAUDE.md platform notes).
+// build gives no overlay hook to add one.
 //
 // Pins: SCK=PB10 (header SCL), WS=PB9 (D10), SD=PC1 (A4), all AF13 - this
 // chip's only header-accessible SAI1_A candidates. No MCLK pin; the INMP441
