@@ -8,7 +8,7 @@ Guard mode / report.py / the web page land in later build steps.
 import threading
 import time
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, Response, redirect, render_template, request, url_for
 
 from arduino.app_utils import *
 
@@ -16,14 +16,15 @@ from features import parse_kx134_features
 from guard import IDLE as GUARD_IDLE
 from guard import GuardController
 from rules import evaluate
-from report import generate_report
+from report import generate_guard_note, generate_report
+from pdf_export import build_pdf
 
 logger = Logger("project-pulse")
 logger.info("Project Pulse probe starting (Check mode)")
 
 flask_app = Flask(__name__)
 latest_lock = threading.Lock()
-latest = {"features": None, "result": None, "report": None, "rated_hz": None}
+latest = {"features": None, "result": None, "report": None, "rated_hz": None, "guard_note": None}
 guard = GuardController()
 
 
@@ -142,6 +143,61 @@ def check():
         with latest_lock:
             latest["report"] = report
     return redirect(url_for("index"))
+
+
+@flask_app.route("/guard/note", methods=["POST"])
+def guard_note():
+    with latest_lock:
+        features, result = latest["features"], latest["result"]
+    if features is not None:
+        note = generate_guard_note(features, result, guard.heat.h)
+        with latest_lock:
+            latest["guard_note"] = note
+    return redirect(url_for("index"))
+
+
+def _feature_rows(features) -> list:
+    return [
+        ("Rotation", f"{features.rotation_hz:.1f} Hz"),
+        ("Velocity RMS", f"{features.velocity_rms_mm_s:.2f} mm/s"),
+        ("1x/2x/3x", f"{features.amp_1x_g:.3f}/{features.amp_2x_g:.3f}/{features.amp_3x_g:.3f} g"),
+        ("High-band ratio", f"{features.band_high_ratio:.2f}"),
+        ("Kurtosis", f"{features.kurtosis:.2f}"),
+        ("Crest factor", f"{features.crest:.2f}"),
+    ]
+
+
+def _pdf_response(title: str, body: str, rows: list, filename: str) -> Response:
+    pdf_bytes = build_pdf(title, body, rows)
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@flask_app.route("/check/pdf", methods=["GET"])
+def check_pdf():
+    with latest_lock:
+        features, result, report = latest["features"], latest["result"], latest["report"]
+    if features is None or report is None:
+        return redirect(url_for("index"))
+    rows = [("Zone", result["zone"]), ("Faults", ", ".join(result["faults"]) or "none")] + _feature_rows(features)
+    return _pdf_response("Project Pulse - Check report", report, rows, "check-report.pdf")
+
+
+@flask_app.route("/guard/note/pdf", methods=["GET"])
+def guard_note_pdf():
+    with latest_lock:
+        features, result, note = latest["features"], latest["result"], latest["guard_note"]
+    if features is None or note is None:
+        return redirect(url_for("index"))
+    rows = [
+        ("Zone", result["zone"]),
+        ("Faults", ", ".join(result["faults"]) or "none"),
+        ("Heat budget", f"{guard.heat.h:.2f}"),
+    ] + _feature_rows(features)
+    return _pdf_response("Project Pulse - Guard note", note, rows, "guard-note.pdf")
 
 
 threading.Thread(target=poll_mic_stats, daemon=True).start()

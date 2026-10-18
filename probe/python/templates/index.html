@@ -36,6 +36,16 @@
     <form method="post" action="/guard/hold" style="display:inline">
       <button type="submit" {% if guard_state != "stopped" %}disabled{% endif %}>Acknowledge stop (hold)</button>
     </form>
+
+    {% if guard_state == "guarding" or guard_state == "stopped" %}
+      <form method="post" action="/guard/note" style="display:inline">
+        <button type="submit">Generate daily note</button>
+      </form>
+    {% endif %}
+    {% if guard_note %}
+      <p>{{ guard_note }}</p>
+      <p><small><a href="/guard/note/pdf">download note as PDF</a></small></p>
+    {% endif %}
   </div>
 
   {% if features %}
@@ -61,6 +71,7 @@
 
     {% if report %}
       <div class="report">{{ report }}</div>
+      <p><small><a href="/check/pdf">download report as PDF</a></small></p>
     {% endif %}
   {% else %}
     <p>Waiting for the probe's first reading...</p>
