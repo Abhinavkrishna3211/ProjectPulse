@@ -27,6 +27,16 @@
     <button type="submit">Set</button>
   </form>
 
+  <div class="report">
+    <p>Guard mode: <strong>{{ guard_state }}</strong></p>
+    <form method="post" action="/guard/press" style="display:inline">
+      <button type="submit" {% if guard_state != "idle" %}disabled{% endif %}>Start calibration (press)</button>
+    </form>
+    <form method="post" action="/guard/hold" style="display:inline">
+      <button type="submit" {% if guard_state != "stopped" %}disabled{% endif %}>Acknowledge stop (hold)</button>
+    </form>
+  </div>
+
   {% if features %}
     <p class="zone zone-{{ result.zone }}">Zone {{ result.zone }}</p>
     {% if result.faults %}

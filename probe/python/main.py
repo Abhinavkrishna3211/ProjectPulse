@@ -110,7 +110,7 @@ def poll_kx134_features():
 @flask_app.route("/", methods=["GET"])
 def index():
     with latest_lock:
-        return render_template("index.html", **latest)
+        return render_template("index.html", guard_state=guard.state, **latest)
 
 
 @flask_app.route("/rated_hz", methods=["POST"])
@@ -118,6 +118,18 @@ def set_rated_hz():
     value = request.form.get("rated_hz", "").strip()
     with latest_lock:
         latest["rated_hz"] = float(value) if value else None
+    return index()
+
+
+@flask_app.route("/guard/press", methods=["POST"])
+def guard_press():
+    guard.button_press()
+    return index()
+
+
+@flask_app.route("/guard/hold", methods=["POST"])
+def guard_hold():
+    guard.button_hold()
     return index()
 
 
@@ -130,7 +142,7 @@ def check():
         with latest_lock:
             latest["report"] = report
     with latest_lock:
-        return render_template("index.html", **latest)
+        return render_template("index.html", guard_state=guard.state, **latest)
 
 
 threading.Thread(target=poll_mic_stats, daemon=True).start()
