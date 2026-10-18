@@ -20,6 +20,7 @@ CALIBRATION_S = 30
 LEARN_S = 180
 T_MAX_S = 300
 T_COOL_S = 120
+ANOMALY_DEBOUNCE = 3  # consecutive anomalous rows needed before flagging amber
 
 IDLE, CALIBRATING, LEARNING, GUARDING, STOPPED = (
     "idle",
@@ -45,6 +46,7 @@ class GuardController:
         self._cal_started = None
         self._learn_rows: list[KX134Features] = []
         self._learn_started = None
+        self._anomaly_streak = 0
 
     def button_press(self) -> None:
         if self.state == IDLE:
@@ -94,6 +96,7 @@ class GuardController:
             self.state = STOPPED
             return "red"
         anomaly = running and self.model.is_anomaly(row)
-        if anomaly or heat_level == "amber" or result["faults"]:
+        self._anomaly_streak = self._anomaly_streak + 1 if anomaly else 0
+        if self._anomaly_streak >= ANOMALY_DEBOUNCE or heat_level == "amber" or result["faults"]:
             return "amber"
         return "green"
