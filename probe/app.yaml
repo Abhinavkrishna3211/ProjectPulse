@@ -1,0 +1,5 @@
+name: Project Pulse
+description: "Magnetic motor stethoscope: Check and Guard modes, offline."
+icon: "🩺"
+ports: [5001]
+bricks: []
