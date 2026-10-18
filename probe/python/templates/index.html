@@ -20,6 +20,13 @@
 <body>
   <h1>Project Pulse - Check mode</h1>
 
+  <form method="post" action="/rated_hz">
+    <label>No-load speed (Hz, for overload detection):
+      <input type="number" step="0.1" name="rated_hz" value="{{ rated_hz or '' }}">
+    </label>
+    <button type="submit">Set</button>
+  </form>
+
   {% if features %}
     <p class="zone zone-{{ result.zone }}">Zone {{ result.zone }}</p>
     {% if result.faults %}

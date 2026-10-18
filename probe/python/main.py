@@ -23,7 +23,7 @@ logger.info("Project Pulse probe starting (Check mode)")
 
 flask_app = Flask(__name__)
 latest_lock = threading.Lock()
-latest = {"features": None, "result": None, "report": None}
+latest = {"features": None, "result": None, "report": None, "rated_hz": None}
 guard = GuardController()
 
 
@@ -89,7 +89,9 @@ def poll_kx134_features():
     while True:
         try:
             row = parse_kx134_features(get_kx134_features())
-            result = evaluate(row)
+            with latest_lock:
+                rated_hz = latest["rated_hz"]
+            result = evaluate(row, rated_hz)
             logger.info("kx134 features: %s -> %s", row, result)
             with latest_lock:
                 latest["features"] = row
@@ -109,6 +111,14 @@ def poll_kx134_features():
 def index():
     with latest_lock:
         return render_template("index.html", **latest)
+
+
+@flask_app.route("/rated_hz", methods=["POST"])
+def set_rated_hz():
+    value = request.form.get("rated_hz", "").strip()
+    with latest_lock:
+        latest["rated_hz"] = float(value) if value else None
+    return index()
 
 
 @flask_app.route("/check", methods=["POST"])
