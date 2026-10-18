@@ -47,6 +47,7 @@ class GuardController:
         self._learn_rows: list[KX134Features] = []
         self._learn_started = None
         self._anomaly_streak = 0
+        self._fault_streak = 0
 
     def button_press(self) -> None:
         if self.state == IDLE:
@@ -97,6 +98,11 @@ class GuardController:
             return "red"
         anomaly = running and self.model.is_anomaly(row)
         self._anomaly_streak = self._anomaly_streak + 1 if anomaly else 0
-        if self._anomaly_streak >= ANOMALY_DEBOUNCE or heat_level == "amber" or result["faults"]:
+        self._fault_streak = self._fault_streak + 1 if result["faults"] else 0
+        if (
+            self._anomaly_streak >= ANOMALY_DEBOUNCE
+            or self._fault_streak >= ANOMALY_DEBOUNCE
+            or heat_level == "amber"
+        ):
             return "amber"
         return "green"

@@ -57,7 +57,9 @@ def test_guard_flags_anomaly_and_latches_stop_then_acks():
         guard.feed(RUNNING, HEALTHY)
     assert guard.state == GUARDING
 
-    assert guard.feed(WILD, {"zone": "D", "faults": ["overload"]}) == "amber"
+    for _ in range(3):
+        state = guard.feed(WILD, {"zone": "D", "faults": ["overload"]})
+    assert state == "amber"
 
     # Heat budget fills from continuous "overload" faults while running.
     for _ in range(300):
@@ -85,6 +87,23 @@ def test_guard_debounces_anomaly_before_flagging_amber():
     guard.model.is_anomaly = lambda row: True  # force every row anomalous
     no_fault = {"zone": "A", "faults": []}
     results = [guard.feed(RUNNING, no_fault) for _ in range(3)]
+    assert results == ["green", "green", "amber"]
+
+
+def test_guard_debounces_faults_before_flagging_amber():
+    now, tick = _clock()
+    guard = GuardController(clock=now)
+    guard.button_press()
+    for _ in range(30):
+        tick()
+        guard.feed(OFF, HEALTHY)
+    for _ in range(180):
+        tick()
+        guard.feed(RUNNING, HEALTHY)
+    assert guard.state == GUARDING
+
+    flagged = {"zone": "B", "faults": ["imbalance"]}
+    results = [guard.feed(RUNNING, flagged) for _ in range(3)]
     assert results == ["green", "green", "amber"]
 
 
