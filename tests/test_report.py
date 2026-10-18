@@ -15,6 +15,11 @@ def test_validate_numbers_accepts_rounded_measured_values():
     assert validate_numbers("Rotation is about 49 Hz at 1.2 mm/s.", measured)
 
 
+def test_validate_numbers_accepts_a_hz_range_without_misreading_the_dash_as_minus():
+    measured = {"band_edge_lo_hz": 10, "band_edge_hi_hz": 800}
+    assert validate_numbers("The 10-800 Hz vibration band is healthy.", measured)
+
+
 def test_validate_numbers_rejects_invented_number():
     measured = {"rotation_hz": 49.0, "velocity_rms_mm_s": 1.2}
     assert not validate_numbers("Rotation is about 73 Hz.", measured)

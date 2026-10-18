@@ -7,16 +7,42 @@ author's own prior (Daybreak) project; see README Credits.
 """
 
 import json
+import logging
 import re
+import socket
+import struct
 import urllib.request
 
-LLAMA_SERVER_URL = "http://127.0.0.1:8080/completion"
+logger = logging.getLogger("project-pulse.report")
+
+
+def _llama_host() -> str:
+    """llama-server runs on the board's host, not inside this app's container,
+    so 127.0.0.1 here means the container itself. Route through the
+    container's default gateway (the host), falling back to localhost for
+    local/non-container test runs. No `ip`/`iproute2` binary in this
+    container, so read the kernel routing table directly."""
+    try:
+        with open("/proc/net/route") as f:
+            next(f)
+            for line in f:
+                fields = line.split()
+                if fields[1] == "00000000":  # destination 0.0.0.0 = default route
+                    return socket.inet_ntoa(struct.pack("<L", int(fields[2], 16)))
+    except Exception:
+        pass
+    return "127.0.0.1"
+
+
+LLAMA_SERVER_URL = f"http://{_llama_host()}:8080/completion"
 NUMBER_TOLERANCE_REL = 0.05  # 5% relative tolerance for rounding in the report text
 NUMBER_TOLERANCE_ABS = 0.05  # absolute floor so near-zero measured values aren't impossibly strict
 
 
 def _numbers_in(text):
-    return [float(m) for m in re.findall(r"-?\d+\.?\d*", text)]
+    # (?<!\d) keeps a "-" in a range like "10-800" from being read as a minus sign.
+    # (?!\w) excludes digits glued to a following letter, e.g. the "1" in "1x amplitude".
+    return [float(m) for m in re.findall(r"(?<!\d)-?\d+\.?\d*(?!\w)", text)]
 
 
 def _matches_a_measurement(n, measured_values):
@@ -34,6 +60,10 @@ def validate_numbers(text: str, measured: dict) -> bool:
 
 def _measured_values(features, result) -> dict:
     return {
+        "iso_standard": 10816,  # the prompt names "ISO 10816"; let the model echo it
+        "band_edge_lo_hz": 10,  # the prompt names the "10-800 Hz" and "400-800 Hz" bands; let the model echo them
+        "band_edge_mid_hz": 400,
+        "band_edge_hi_hz": 800,
         "rotation_hz": round(features.rotation_hz, 1),
         "velocity_rms_mm_s": round(features.velocity_rms_mm_s, 2),
         "amp_1x_g": round(features.amp_1x_g, 3),
@@ -48,8 +78,9 @@ def _measured_values(features, result) -> dict:
 def build_prompt(features, result: dict) -> str:
     return (
         "You are writing a short plain-language report for a technician who just "
-        "tested a motor with a vibration probe. Use ONLY the numbers given below - "
-        "never invent or round a number that isn't listed. Be concise (3-4 sentences).\n\n"
+        "tested a motor with a vibration probe. Use ONLY the measurements given below - "
+        "never invent a number, a band, or a measurement that isn't listed below. "
+        "Write 3-4 plain sentences, no bullet list, no restating the raw numbers.\n\n"
         f"ISO 10816 zone: {result['zone']}\n"
         f"Faults detected: {', '.join(result['faults']) or 'none'}\n"
         f"Rotation speed: {features.rotation_hz:.1f} Hz\n"
@@ -57,18 +88,18 @@ def build_prompt(features, result: dict) -> str:
         f"1x amplitude: {features.amp_1x_g:.3f} g\n"
         f"2x amplitude: {features.amp_2x_g:.3f} g\n"
         f"3x amplitude: {features.amp_3x_g:.3f} g\n"
-        f"High-band (400-800 Hz) energy share: {features.band_high_ratio:.2f}\n"
+        f"400-800 Hz energy share of the 10-800 Hz vibration band: {features.band_high_ratio:.2f}\n"
         f"Kurtosis: {features.kurtosis:.2f}\n"
         f"Crest factor: {features.crest:.2f}\n"
     )
 
 
-def _call_llama(prompt: str, n_predict: int = 160) -> str:
+def _call_llama(prompt: str, n_predict: int = 130) -> str:
     body = json.dumps({"prompt": prompt, "n_predict": n_predict, "temperature": 0.2}).encode()
     req = urllib.request.Request(
         LLAMA_SERVER_URL, data=body, headers={"Content-Type": "application/json"}
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with urllib.request.urlopen(req, timeout=60) as resp:
         return json.loads(resp.read())["content"].strip()
 
 
@@ -92,8 +123,10 @@ def generate_report(features, result: dict, call_llama=_call_llama) -> str:
     for _ in range(2):
         try:
             text = call_llama(prompt)
-        except Exception:
+        except Exception as exc:
+            logger.warning("llama-server call failed: %s", exc)
             break
         if validate_numbers(text, measured):
             return text
+        logger.warning("llm text rejected (invented number): %r", text)
     return _fallback_report(features, result)

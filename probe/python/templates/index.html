@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Project Pulse - Check mode</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    .zone { font-size: 2rem; font-weight: bold; }
+    .zone-A { color: #2e7d32; }
+    .zone-B { color: #9e9d24; }
+    .zone-C { color: #ef6c00; }
+    .zone-D { color: #c62828; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    td, th { text-align: left; padding: 0.3rem 0.6rem; border-bottom: 1px solid #ddd; }
+    .faults { color: #c62828; font-weight: bold; }
+    button { font-size: 1rem; padding: 0.6rem 1.2rem; }
+    .report { background: #f5f5f5; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Project Pulse - Check mode</h1>
+
+  {% if features %}
+    <p class="zone zone-{{ result.zone }}">Zone {{ result.zone }}</p>
+    {% if result.faults %}
+      <p class="faults">Faults: {{ result.faults | join(", ") }}</p>
+    {% else %}
+      <p>No fault signature matched.</p>
+    {% endif %}
+
+    <table>
+      <tr><th>Rotation</th><td>{{ "%.1f"|format(features.rotation_hz) }} Hz</td></tr>
+      <tr><th>Velocity RMS</th><td>{{ "%.2f"|format(features.velocity_rms_mm_s) }} mm/s</td></tr>
+      <tr><th>1x / 2x / 3x</th><td>{{ "%.3f"|format(features.amp_1x_g) }} / {{ "%.3f"|format(features.amp_2x_g) }} / {{ "%.3f"|format(features.amp_3x_g) }} g</td></tr>
+      <tr><th>High-band ratio</th><td>{{ "%.2f"|format(features.band_high_ratio) }}</td></tr>
+      <tr><th>Kurtosis</th><td>{{ "%.2f"|format(features.kurtosis) }}</td></tr>
+      <tr><th>Crest factor</th><td>{{ "%.2f"|format(features.crest) }}</td></tr>
+    </table>
+
+    <form method="post" action="/check">
+      <button type="submit">Generate report</button>
+    </form>
+
+    {% if report %}
+      <div class="report">{{ report }}</div>
+    {% endif %}
+  {% else %}
+    <p>Waiting for the probe's first reading...</p>
+  {% endif %}
+
+  <p><small><a href="/">refresh</a></small></p>
+</body>
+</html>
