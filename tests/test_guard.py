@@ -57,7 +57,7 @@ def test_guard_flags_anomaly_and_latches_stop_then_acks():
         guard.feed(RUNNING, HEALTHY)
     assert guard.state == GUARDING
 
-    for _ in range(3):
+    for _ in range(5):
         state = guard.feed(WILD, {"zone": "D", "faults": ["overload"]})
     assert state == "amber"
 
@@ -86,8 +86,8 @@ def test_guard_debounces_anomaly_before_flagging_amber():
 
     guard.model.is_anomaly = lambda row: True  # force every row anomalous
     no_fault = {"zone": "A", "faults": []}
-    results = [guard.feed(RUNNING, no_fault) for _ in range(3)]
-    assert results == ["green", "green", "amber"]
+    results = [guard.feed(RUNNING, no_fault) for _ in range(5)]
+    assert results == ["green", "green", "green", "green", "amber"]
 
 
 def test_guard_debounces_faults_before_flagging_amber():
@@ -103,8 +103,8 @@ def test_guard_debounces_faults_before_flagging_amber():
     assert guard.state == GUARDING
 
     flagged = {"zone": "B", "faults": ["imbalance"]}
-    results = [guard.feed(RUNNING, flagged) for _ in range(3)]
-    assert results == ["green", "green", "amber"]
+    results = [guard.feed(RUNNING, flagged) for _ in range(5)]
+    assert results == ["green", "green", "green", "green", "amber"]
 
 
 if __name__ == "__main__":

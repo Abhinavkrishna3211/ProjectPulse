@@ -20,7 +20,7 @@ CALIBRATION_S = 30
 LEARN_S = 180
 T_MAX_S = 300
 T_COOL_S = 120
-ANOMALY_DEBOUNCE = 3  # consecutive anomalous rows needed before flagging amber
+ANOMALY_DEBOUNCE = 5  # consecutive anomalous rows needed before flagging amber
 
 IDLE, CALIBRATING, LEARNING, GUARDING, STOPPED = (
     "idle",
