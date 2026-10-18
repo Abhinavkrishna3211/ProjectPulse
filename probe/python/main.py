@@ -36,6 +36,18 @@ def get_kx134_stats() -> str: ...
 def get_kx134_features() -> str: ...
 
 
+@call()
+def set_led_state(state: str) -> None: ...
+
+
+def led_state_for(result: dict) -> str:
+    if result["zone"] == "D":
+        return "red"
+    if result["zone"] in ("B", "C") or result["faults"]:
+        return "amber"
+    return "green"
+
+
 def poll_mic_stats():
     while True:
         try:
@@ -63,6 +75,10 @@ def poll_kx134_features():
             with latest_lock:
                 latest["features"] = row
                 latest["result"] = result
+            try:
+                set_led_state(led_state_for(result))
+            except Exception as exc:
+                logger.error("set_led_state failed: %s", exc)
         except Exception as exc:
             logger.error("get_kx134_features failed: %s", exc)
         time.sleep(1)

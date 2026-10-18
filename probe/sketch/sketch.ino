@@ -4,6 +4,7 @@
 #include <Arduino_RouterBridge.h>
 
 #include "kx134_sampler.h"
+#include "led.h"
 #include "mic_sampler.h"
 
 void setup() {
@@ -11,6 +12,7 @@ void setup() {
   Bridge.begin();
   mic_sampler_start();
   kx134_sampler_start();
+  led_start();
 }
 
 void loop() {
