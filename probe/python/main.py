@@ -8,7 +8,7 @@ Guard mode / report.py / the web page land in later build steps.
 import threading
 import time
 
-from flask import Flask, render_template, request
+from flask import Flask, redirect, render_template, request, url_for
 
 from arduino.app_utils import *
 
@@ -118,19 +118,19 @@ def set_rated_hz():
     value = request.form.get("rated_hz", "").strip()
     with latest_lock:
         latest["rated_hz"] = float(value) if value else None
-    return index()
+    return redirect(url_for("index"))
 
 
 @flask_app.route("/guard/press", methods=["POST"])
 def guard_press():
     guard.button_press()
-    return index()
+    return redirect(url_for("index"))
 
 
 @flask_app.route("/guard/hold", methods=["POST"])
 def guard_hold():
     guard.button_hold()
-    return index()
+    return redirect(url_for("index"))
 
 
 @flask_app.route("/check", methods=["POST"])
@@ -141,8 +141,7 @@ def check():
         report = generate_report(features, result)
         with latest_lock:
             latest["report"] = report
-    with latest_lock:
-        return render_template("index.html", guard_state=guard.state, **latest)
+    return redirect(url_for("index"))
 
 
 threading.Thread(target=poll_mic_stats, daemon=True).start()
