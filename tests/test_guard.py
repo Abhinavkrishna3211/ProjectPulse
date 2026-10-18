@@ -45,6 +45,34 @@ def test_guard_cycles_idle_calibrating_learning_guarding():
     assert guard.model.is_learned
 
 
+def test_guard_extends_learn_window_instead_of_crashing_when_motor_rarely_clears_floor():
+    now, tick = _clock()
+    guard = GuardController(clock=now)
+    guard.button_press()
+    for _ in range(30):
+        tick()
+        guard.feed(OFF, HEALTHY)
+    assert guard.state == LEARNING
+
+    # Quiet motor: only 1 row ever clears the running gate per window.
+    for _ in range(180):
+        tick()
+        guard.feed(OFF, HEALTHY)
+    guard.feed(RUNNING, HEALTHY)
+    for _ in range(180):
+        tick()
+        guard.feed(OFF, HEALTHY)
+    assert guard.state == LEARNING  # still collecting, not stuck erroring
+    assert not guard.model.is_learned
+
+    # Enough real running rows finally show up within one window.
+    for _ in range(180):
+        tick()
+        guard.feed(RUNNING, HEALTHY)
+    assert guard.state == GUARDING
+    assert guard.model.is_learned
+
+
 def test_guard_flags_anomaly_and_latches_stop_then_acks():
     now, tick = _clock()
     guard = GuardController(clock=now)
@@ -109,5 +137,6 @@ def test_guard_debounces_faults_before_flagging_amber():
 
 if __name__ == "__main__":
     test_guard_cycles_idle_calibrating_learning_guarding()
+    test_guard_extends_learn_window_instead_of_crashing_when_motor_rarely_clears_floor()
     test_guard_flags_anomaly_and_latches_stop_then_acks()
     print("ok")

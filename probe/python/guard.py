@@ -85,8 +85,14 @@ class GuardController:
         if is_running(row.velocity_rms_mm_s, self.floor):
             self._learn_rows.append(row)
         if self._clock() - self._learn_started >= LEARN_S:
-            self.model.learn(self._learn_rows)
-            self.state = GUARDING
+            if len(self._learn_rows) >= 2:
+                self.model.learn(self._learn_rows)
+                self.state = GUARDING
+            else:
+                # Not enough rows cleared the running gate in this window (e.g. a
+                # quiet motor close to its own off-floor) - keep collecting instead
+                # of crashing every row forever.
+                self._learn_started = self._clock()
         return "blue"
 
     def _guard(self, row: KX134Features, result: dict) -> str:
