@@ -102,6 +102,10 @@ class GuardController:
         if heat_level == "stop":
             self.state = STOPPED
             return "red"
+        if not running:
+            self._anomaly_streak = 0
+            self._fault_streak = 0
+            return "off"
         anomaly = running and self.model.is_anomaly(row)
         self._anomaly_streak = self._anomaly_streak + 1 if anomaly else 0
         self._fault_streak = self._fault_streak + 1 if result["faults"] else 0

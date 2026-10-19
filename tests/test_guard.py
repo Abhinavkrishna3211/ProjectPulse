@@ -118,6 +118,22 @@ def test_guard_debounces_anomaly_before_flagging_amber():
     assert results == ["green", "green", "green", "green", "amber"]
 
 
+def test_guard_shows_off_when_motor_stops_while_guarding():
+    now, tick = _clock()
+    guard = GuardController(clock=now)
+    guard.button_press()
+    for _ in range(30):
+        tick()
+        guard.feed(OFF, HEALTHY)
+    for _ in range(180):
+        tick()
+        guard.feed(RUNNING, HEALTHY)
+    assert guard.state == GUARDING
+
+    assert guard.feed(OFF, HEALTHY) == "off"
+    assert guard.state == GUARDING  # off is a display hint, not a state change
+
+
 def test_guard_debounces_faults_before_flagging_amber():
     now, tick = _clock()
     guard = GuardController(clock=now)

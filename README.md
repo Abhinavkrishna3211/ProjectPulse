@@ -21,7 +21,10 @@ warns when something drifts, and cuts power when it has to. Everything runs on a
 - **Stop plug:** fail-safe. A stop, a lost link or a bad signature turns the motor off.
 
 ## Status
-Work in progress. Measured results go in `docs/measurements.md`.
+- **Probe, Check mode:** done and tested on real hardware - sensor bring-up, fault rules, zone/LED display, Gemma report generation.
+- **Probe, Guard mode:** done and tested on real hardware - calibrate/learn/guard cycle, anomaly + fault debounce, heat-budget stop/cooldown, motor-on/off LED state.
+- **Stop plug:** code written, **not yet tested on real hardware**. Logic only; verify with a lamp before ever wiring it to mains.
+- Measured results go in `docs/measurements.md`.
 
 ## Safety
 The stop plug switches mains voltage. Use a relay rated for the load, keep mains wiring inside a closed box, never work on it while plugged in, and test with a lamp first.

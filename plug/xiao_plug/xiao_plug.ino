@@ -11,7 +11,7 @@
 //
 // Permit packet (8 bytes payload + 32 bytes HMAC-SHA256, over UDP):
 //   seq (uint32 big-endian) | unix_time (uint32 big-endian) | hmac(seq+time)
-// seq must strictly increase (replay guard); freshness is judged by the
+// seq must strictly increase (replay guard); freshness is decided by the
 // plug's own clock at receipt, not by the timestamp inside the packet.
 
 #include <WiFi.h>
