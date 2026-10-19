@@ -14,7 +14,10 @@ from sklearn.ensemble import IsolationForest
 
 from features import KX134Features
 
-OFF_FLOOR_K = 3.0  # running if velocity RMS >= floor * k
+OFF_FLOOR_K = 1.5  # running if velocity RMS >= floor * k
+# ponytail: tuned against real board readings on 2026-10-19 (floor ~2.2-2.4 mm/s,
+# an apparent sensor/integration noise floor present regardless of motor or
+# surface); 3.0x left the gate unclearable even for a motor with real faults.
 
 
 def off_floor(calibration_rms: list[float]) -> float:

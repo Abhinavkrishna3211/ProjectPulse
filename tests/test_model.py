@@ -40,8 +40,8 @@ def test_off_floor_rejects_empty_calibration():
 
 def test_is_running_above_floor_times_k():
     floor = 0.5
-    assert is_running(2.5, floor)  # 2.5 >= 0.5 * 3.0
-    assert not is_running(1.0, floor)  # below the 1.5 running threshold
+    assert is_running(2.5, floor)  # 2.5 >= 0.5 * 1.5
+    assert not is_running(0.5, floor)  # below the 0.75 running threshold
 
 
 def test_guard_model_requires_learning_first():

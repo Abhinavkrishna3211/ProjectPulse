@@ -1,0 +1,11 @@
+// Copy to config.h (gitignored) and fill in before flashing. Never commit config.h.
+#pragma once
+
+#define WIFI_SSID "your-wifi-ssid"
+#define WIFI_PASSWORD "your-wifi-password"
+
+// UDP port the plug listens on for permits.
+#define PLUG_PORT 5055
+
+// Must match probe/python/plug_config.py's SHARED_SECRET exactly.
+#define SHARED_SECRET "change-me-to-a-long-random-string"

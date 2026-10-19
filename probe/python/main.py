@@ -15,6 +15,7 @@ from arduino.app_utils import *
 from features import parse_kx134_features
 from guard import IDLE as GUARD_IDLE
 from guard import GuardController
+from model import OFF_FLOOR_K
 from rules import evaluate
 from report import generate_guard_note, generate_report
 from pdf_export import build_pdf
@@ -98,7 +99,19 @@ def poll_kx134_features():
                 latest["features"] = row
                 latest["result"] = result
             poll_button()
+            prev_state = guard.state
             led_state = led_state_for(result) if guard.state == GUARD_IDLE else guard.feed(row, result)
+            if guard.state != prev_state:
+                logger.info(
+                    "guard %s -> %s (floor=%s, learn_rows=%d)",
+                    prev_state, guard.state, guard.floor, len(guard._learn_rows),
+                )
+            elif guard.state == "learning" and int(time.monotonic()) % 15 == 0:
+                logger.info(
+                    "guard learning: velocity=%.2f floor=%s threshold=%s learn_rows=%d",
+                    row.velocity_rms_mm_s, guard.floor,
+                    guard.floor * OFF_FLOOR_K if guard.floor else None, len(guard._learn_rows),
+                )
             try:
                 set_led_state(led_state)
             except Exception as exc:

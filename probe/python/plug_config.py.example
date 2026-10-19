@@ -1,0 +1,6 @@
+# Copy to plug_config.py (gitignored) and fill in before testing. Never commit plug_config.py.
+PLUG_IP = "192.168.1.X"
+PLUG_PORT = 5055
+
+# Must match plug/xiao_plug/config.h's SHARED_SECRET exactly.
+SHARED_SECRET = b"change-me-to-a-long-random-string"
