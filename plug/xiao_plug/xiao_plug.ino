@@ -2,8 +2,7 @@
 //
 // NOT YET TESTED ON HARDWARE. Before ever wiring this to mains: verify the
 // relay contact rating covers the machine, test the logic end to end with a
-// lamp instead of the machine, and only then connect anything live. See
-// CLAUDE.md "Safety rules (mains)".
+// lamp instead of the machine, and only then connect anything live.
 //
 // Unpaired = normal socket (relay stays closed/ON, passthrough). Paired =
 // relay ON only while valid HMAC permits keep arriving; any gap over
